@@ -37,12 +37,24 @@ void System_Clock_Config (void) {
  * */
 
 uint32_t cnt = 0;
+uint32_t cnt_stop = 0xFFFFFFFF;
 
 void TIM4_IRQHandler(void) {
-	TIM4->SR &= ~TIM_SR_UIF;
+    
+    GPIOD->ODR |= GPIO_ODR_OD13;
     ++cnt;
-//	TIM4->CR1 &= ~TIM_CR1_CEN;
+    if (cnt == cnt_stop)
+    	TIM4->CR1 &= ~TIM_CR1_CEN;
+    GPIOD->ODR &= ~GPIO_ODR_OD13;
+	TIM4->SR &= ~TIM_SR_UIF;
+
 //    TIM4->CR1 |= TIM_CR1_CEN;
+}
+
+void make_n_pulse(const uint32_t n) {
+    cnt_stop = n;
+    cnt = 0;
+    TIM4->CR1 |= TIM_CR1_CEN;
 }
 
 int main(void) {
@@ -67,17 +79,19 @@ int main(void) {
     NVIC_EnableIRQ(TIM4_IRQn);
     NVIC_SetPriority(TIM4_IRQn, 2);
     TIM4->CR1 |= TIM_CR1_CEN;
+    TIM4->CR1 &= ~TIM_CR1_CEN;
 
-    const uint32_t L = 1500;
-    const uint32_t R = 3000;
+
+
     while(1) {
-        if (cnt < L) {
-            GPIOD->ODR |= GPIO_ODR_OD13;
-        } else {
-            GPIOD->ODR &= ~GPIO_ODR_OD13;
-        }
-        if (cnt == R)
-            cnt = 0;
+        make_n_pulse(5);
+        //if (cnt < L) {
+        //    GPIOD->ODR |= GPIO_ODR_OD13;
+        //} else {
+        //    GPIOD->ODR &= ~GPIO_ODR_OD13;
+        //}
+        //if (cnt == R)
+        //   cnt = 0;
     }
 }
 
